@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MarketHub - Buy & Sell Anything</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        .product-card {
+            transition: all 0.3s ease;
+        }
+        .product-card:hover {
+            transform: translateY(-4px);
+        }
+        .cart-item-enter {
+            animation: slideIn 0.3s ease-out;
+        }
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        .modal-backdrop {
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <!-- Header -->
+    <header class="bg-white shadow-sm sticky top-0 z-40">
+        <div class="container mx-auto px-4">
+            <div class="flex items-center justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <h1 class="text-2xl font-bold text-indigo-600">
+                        <i class="fas fa-store mr-2"></i>MarketHub
+                    </h1>
+                </div>
+
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xl mx-8">
+                    <div class="relative">
+                        <input type="text" id="searchInput" placeholder="Search for products..." 
+                               class="w-full px-4 py-2 pl-10 pr-4 text-gray-700 bg-gray-100 border border-gray-300 rounded-full focus:outline-none focus:border-indigo-500 focus:bg-white">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                    </div>
+                </div>
+
+                <!-- Navigation -->
+                <nav class="flex items-center space-x-6">
+                    <button onclick="showSellModal()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Sell
+                    </button>
+                    <button onclick="toggleCart()" class="relative text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-shopping-cart text-xl"></i>
+                        <span id="cartCount" class="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">0</span>
+                    </button>
+                    <button class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-user-circle text-2xl"></i>
+                    </button>
+                </nav>
+            </div>
+        </div>
+    </header>
+
+    <!-- Categories -->
+    <section class="bg-white border-b">
+        <div class="container mx-auto px-4 py-4">
+            <div class="flex space-x-6 overflow-x-auto">
+                <button onclick="filterCategory('all')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full bg-indigo-100 text-indigo-700 font-medium">
+                    All Categories
+                </button>
+                <button onclick="filterCategory('electronics')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full hover:bg-gray-100 text-gray-700">
+                    Electronics
+                </button>
+                <button onclick="filterCategory('fashion')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full hover:bg-gray-100 text-gray-700">
+                    Fashion
+                </button>
+                <button onclick="filterCategory('home')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full hover:bg-gray-100 text-gray-700">
+                    Home & Garden
+                </button>
+                <button onclick="filterCategory('sports')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full hover:bg-gray-100 text-gray-700">
+                    Sports
+                </button>
+                <button onclick="filterCategory('books')" class="category-btn whitespace-nowrap px-4 py-2 rounded-full hover:bg-gray-100 text-gray-700">
+                    Books
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Main Content -->
+    <main class="container mx-auto px-4 py-8">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-2xl font-bold text-gray-800">Featured Products</h2>
+            <select class="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500">
+                <option>Sort by: Featured</option>
+                <option>Price: Low to High</option>
+                <option>Price: High to Low</option>
+                <option>Newest First</option>
+            </select>
+        </div>
+
+        <!-- Products Grid -->
+        <div id="productsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            <!-- Products will be dynamically loaded here -->
+        </div>
+    </main>
+
+    <!-- Shopping Cart Sidebar -->
+    <div id="cartSidebar" class="fixed right-0 top-0 h-full w-96 bg-white shadow-2xl transform translate-x-full transition-transform duration-300 z-50">
+        <div class="p-6 border-b">
+            <div class="flex justify-between items-center">
+                <h3 class="text-xl font-bold">Shopping Cart</h3>
+                <button onclick="toggleCart()" class="text-gray-500 hover:text-gray-700">
+                    <i class="fas fa-times text-xl"></i>
+                </button>
+            </div>
+        </div>
+        <div id="cartItems" class="flex-1 overflow-y-auto p-6">
+            <!-- Cart items will be displayed here -->
+        </div>
+        <div class="border-t p-6">
+            <div class="flex justify-between mb-4">
+                <span class="text-lg font-semibold">Total:</span>
+                <span id="cartTotal" class="text-lg font-bold text-indigo-600">$0.00</span>
+            </div>
+            <button class="w-full bg-indigo-600 text-white py-3 rounded-lg hover:bg-indigo-700 transition">
+                Proceed to Checkout
+            </button>
+        </div>
+    </div>
+
+    <!-- Sell Item Modal -->
+    <div id="sellModal" class="fixed inset-0 bg-black bg-opacity-50 modal-backdrop hidden z-50">
+        <div class="flex items-center justify-center min-h-screen p-4">
+            <div class="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+                <div class="p-6 border-b">
+                    <div class="flex justify-between items-center">
+                        <h3 class="text-2xl font-bold">List an Item for Sale</h3>
+                        <button onclick="closeSellModal()" class="text-gray-500 hover:text-gray-700">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                </div>
+                <form id="sellForm" class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Product Name</label>
+                            <input type="text" id="productName" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price ($)</label>
+                            <input type="number" id="productPrice" required min="0" step="0.01" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                            <select id="productCategory" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500">
+                                <option value="">Select a category</option>
+                                <option value="electronics">Electronics</option>
+                                <option value="fashion">Fashion</option>
+                                <option value="home">Home & Garden</option>
+                                <option value="sports">Sports</option>
+                                <option value="books">Books</option>
+                            </select>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                            <textarea id="productDescription" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500"></textarea>
+                        </div>
+                        <div class="md:col-span-2">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Image URL (optional)</label>
+                            <input type="url" id="productImage" placeholder="https://example.com/image.jpg" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:border-indigo-500">
+                        </div>
+                    </div>
+                    <div class="mt-6 flex justify-end space-x-4">
+                        <button type="button" onclick="closeSellModal()" class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            Cancel
+                        </button>
+                        <button type="submit" class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+                            List Item
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Sample product data
+        let products = [
+            {
+                id: 1,
+                name: "Wireless Headphones",
+                price: 79.99,
+                category: "electronics",
+                image: "https://picsum.photos/seed/headphones/300/300.jpg",
+                description: "High-quality wireless headphones with noise cancellation"
+            },
+            {
+                id: 2,
+                name: "Vintage Leather Jacket",
+                price: 149.99,
+                category: "fashion",
+                image: "https://picsum.photos/seed/jacket/300/300.jpg",
+                description: "Stylish vintage leather jacket in excellent condition"
+            },
+            {
+                id: 3,
+                name: "Smart Watch",
+                price: 299.99,
+                category: "electronics",
+                image: "https://picsum.photos/seed/watch/300/300.jpg",
+                description: "Latest smartwatch with health tracking features"
+            },
+            {
+                id: 4,
+                name: "Indoor Plant Set",
+                price: 39.99,
+                category: "home",
+                image: "https://picsum.photos/seed/plants/300/300.jpg",
+                description: "Beautiful set of 3 indoor plants with pots"
+            },
+            {
+                id: 5,
+                name: "Yoga Mat",
+                price: 29.99,
+                category: "sports",
+                image: "https://picsum.photos/seed/yoga/300/300.jpg",
+                description: "Premium non-slip yoga mat for all workouts"
+            },
+            {
+                id: 6,
+                name: "Programming Books Collection",
+                price: 89.99,
+                category: "books",
+                image: "https://picsum.photos/seed/books/300/300.jpg",
+                description: "Complete collection of programming books for beginners"
+            }
+        ];
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let currentCategory = 'all';
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', () => {
+            renderProducts();
+            updateCartUI();
+        });
+
+        // Render products
+        function renderProducts() {
+            const grid = document.getElementById('productsGrid');
+            const filteredProducts = currentCategory === 'all' 
+                ? products 
+                : products.filter(p => p.category === currentCategory);
+            
+            grid.innerHTML = filteredProducts.map(product => `
+                <div class="product-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl">
+                    <div class="relative">
+                        <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                        <button onclick="addToCart(${product.id})" class="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100">
+                            <i class="fas fa-shopping-cart text-indigo-600"></i>
+                        </button>
+                    </div>
+                    <div class="p-4">
+                        <h3 class="font-semibold text-lg mb-1">${product.name}</h3>
+                        <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                        <div class="flex justify-between items-center">
+                            <span class="text-2xl font-bold text-indigo-600">$${product.price}</span>
+                            <button onclick="addToCart(${product.id})" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                                Buy Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Filter by category
+        function filterCategory(category) {
+            currentCategory = category;
+            renderProducts();
+            
+            // Update active category button
+            document.querySelectorAll('.category-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-100', 'text-indigo-700');
+                btn.classList.add('hover:bg-gray-100', 'text-gray-700');
+            });
+            event.target.classList.remove('hover:bg-gray-100', 'text-gray-700');
+            event.target.classList.add('bg-indigo-100', 'text-indigo-700');
+        }
+
+        // Add to cart
+        function addToCart(productId) {
+            const product = products.find(p => p.id === productId);
+            const existingItem = cart.find(item => item.id === productId);
+            
+            if (existingItem) {
+                existingItem.quantity++;
+            } else {
+                cart.push({ ...product, quantity: 1 });
+            }
+            
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartUI();
+            
+            // Show success notification
+            showNotification('Item added to cart!');
+        }
+
+        // Update cart UI
+        function updateCartUI() {
+            const cartCount = document.getElementById('cartCount');
+            const cartItems = document.getElementById('cartItems');
+            const cartTotal = document.getElementById('cartTotal');
+            
+            const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
+            cartCount.textContent = totalItems;
+            
+            if (cart.length === 0) {
+                cartItems.innerHTML = '<p class="text-gray-500 text-center">Your cart is empty</p>';
+                cartTotal.textContent = '$0.00';
+            } else {
+                cartItems.innerHTML = cart.map(item => `
+                    <div class="cart-item-enter flex items-center space-x-4 mb-4 pb-4 border-b">
+                        <img src="${item.image}" alt="${item.name}" class="w-16 h-16 object-cover rounded">
+                        <div class="flex-1">
+                            <h4 class="font-semibold">${item.name}</h4>
+                            <p class="text-gray-600">$${item.price} x ${item.quantity}</p>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            <button onclick="updateQuantity(${item.id}, -1)" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-minus-circle"></i>
+                            </button>
+                            <span class="font-semibold">${item.quantity}</span>
+                            <button onclick="updateQuantity(${item.id}, 1)" class="text-gray-500 hover:text-gray-700">
+                                <i class="fas fa-plus-circle"></i>
+                            </button>
+                            <button onclick="removeFromCart(${item.id})" class="text-red-500 hover:text-red-700 ml-2">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                `).join('');
+                
+                const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                cartTotal.textContent = $${total.toFixed(2)};
+            }
+        }
+
+        // Update quantity
+        function updateQuantity(productId, change) {
+            const item = cart.find(item => item.id === productId);
+            if (item) {
+                item.quantity += change;
+                if (item.quantity <= 0) {
+                    removeFromCart(productId);
+                } else {
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    updateCartUI();
+                }
+            }
+        }
+
+        // Remove from cart
+        function removeFromCart(productId) {
+            cart = cart.filter(item => item.id !== productId);
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartUI();
+        }
+
+        // Toggle cart sidebar
+        function toggleCart() {
+            const sidebar = document.getElementById('cartSidebar');
+            sidebar.classList.toggle('translate-x-full');
+        }
+
+        // Show sell modal
+        function showSellModal() {
+            document.getElementById('sellModal').classList.remove('hidden');
+        }
+
+        // Close sell modal
+        function closeSellModal() {
+            document.getElementById('sellModal').classList.add('hidden');
+            document.getElementById('sellForm').reset();
+        }
+
+        // Handle sell form submission
+        document.getElementById('sellForm').addEventListener('submit', (e) => {
+            e.preventDefault();
+            
+            const newProduct = {
+                id: products.length + 1,
+                name: document.getElementById('productName').value,
+                price: parseFloat(document.getElementById('productPrice').value),
+                category: document.getElementById('productCategory').value,
+                description: document.getElementById('productDescription').value,
+                image: document.getElementById('productImage').value || https://picsum.photos/seed/product${products.length + 1}/300/300.jpg
+            };
+            
+            products.unshift(newProduct);
+            renderProducts();
+            closeSellModal();
+            showNotification('Product listed successfully!');
+        });
+
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const filteredProducts = products.filter(product => 
+                product.name.toLowerCase().includes(searchTerm) ||
+                product.description.toLowerCase().includes(searchTerm)
+            );
+            
+            const grid = document.getElementById('productsGrid');
+            if (filteredProducts.length === 0) {
+                grid.innerHTML = '<p class="col-span-full text-center text-gray-500">No products found</p>';
+            } else {
+                grid.innerHTML = filteredProducts.map(product => `
+                    <div class="product-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-xl">
+                        <div class="relative">
+                            <img src="${product.image}" alt="${product.name}" class="w-full h-48 object-cover">
+                            <button onclick="addToCart(${product.id})" class="absolute top-2 right-2 bg-white rounded-full p-2 shadow-md hover:bg-gray-100">
+                                <i class="fas fa-shopping-cart text-indigo-600"></i>
+                            </button>
+                        </div>
+                        <div class="p-4">
+                            <h3 class="font-semibold text-lg mb-1">${product.name}</h3>
+                            <p class="text-gray-600 text-sm mb-3">${product.description}</p>
+                            <div class="flex justify-between items-center">
+                                <span class="text-2xl font-bold text-indigo-600">$${product.price}</span>
+                                <button onclick="addToCart(${product.id})" class="bg-indigo-600 text-white px-4 py-2 rounded-lg hover:bg-indigo-700 transition">
+                                    Buy Now
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        });
+
+        // Show notification
+        function showNotification(message) {
+            const notification = document.createElement('div');
+            notification.className = 'fixed bottom-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50';
+            notification.innerHTML = <i class="fas fa-check-circle mr-2"></i>${message};
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
+        }
+
+        // Close modal when clicking outside
+        document.getElementById('sellModal').addEventListener('click', (e) => {
+            if (e.target.id === 'sellModal') {
+                closeSellModal();
+            }
+        });
+    </script>
+</body>
+</html>
